@@ -7,3 +7,9 @@
     @apply bg-app text-primary min-h-screen antialiased;
   }
 }
+
+/* Hide Netlify Drawer Badge */
+netlify-drawer, #netlify-drawer {
+  display: none !important;
+}
+
