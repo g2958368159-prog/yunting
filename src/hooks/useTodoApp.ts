@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { Task, DateString } from '../types';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
 
 export function useTodoApp() {

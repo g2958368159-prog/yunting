@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useTodoApp } from './hooks/useTodoApp';
 import { TaskItem } from './components/TaskItem';
 import { CalendarWidget } from './components/CalendarWidget';
-import { Calendar as CalendarIcon, ChevronDown, X, LogOut } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { cn } from './lib/utils';
 import { supabase } from './lib/supabase';
 import { Auth } from './components/Auth';
 import { UserProfile } from './components/UserProfile';
@@ -43,8 +42,6 @@ export default function App() {
 
 function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }) {
   const {
-    tasks,
-    setTasks,
     targetDate,
     setTargetDate,
     physicalToday,
@@ -54,7 +51,7 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
     addTask,
     toggleTask,
     updateTask,
-    deleteTask
+    deleteTask,
   } = useTodoApp();
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
