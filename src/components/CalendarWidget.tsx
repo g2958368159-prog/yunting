@@ -73,7 +73,7 @@ export function CalendarWidget({ targetDate, onChangeDate, physicalToday }: Cale
                     )
               )}
             >
-              {format(day, 'd')}
+              {isToday ? '今' : format(day, 'd')}
             </button>
           );
         })}
