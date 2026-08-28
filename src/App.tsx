@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useTodoApp } from './hooks/useTodoApp';
 import { TaskItem } from './components/TaskItem';
 import { CalendarWidget } from './components/CalendarWidget';
-import { Calendar as CalendarIcon, ChevronDown, X } from 'lucide-react';
+import { DateRangePicker } from './components/DateRangePicker';
+import { Calendar as CalendarIcon, ChevronDown, X, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from './lib/supabase';
 import { Auth } from './components/Auth';
@@ -45,12 +46,12 @@ export default function App() {
 
 function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }) {
   const {
+    tasks,
     targetDate,
     setTargetDate,
     physicalToday,
     unfinishedTasks,
     finishedTasks,
-    canAddTask,
     addTask,
     toggleTask,
     updateTask,
@@ -59,7 +60,10 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [newContent, setNewContent] = useState('');
+  const [newStartDate, setNewStartDate] = useState('');
+  const [newEndDate, setNewEndDate] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Date Titles
   const targetDateObj = parseISO(targetDate);
@@ -68,8 +72,23 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
 
   const handleAddSubmit = () => {
     if (newContent.trim()) {
-      addTask(newContent.trim());
+      const finalStart = newStartDate || targetDate;
+      const finalEnd = newEndDate || finalStart;
+      
+      // Update useTodoApp's addTask to handle just the final creationDate string
+      // But wait, the current addTask signature is `addTask(content: string, endDate?: string)`.
+      // I should update it to accept the raw creation_date string.
+      // Let's change how we call it. For now, let's just pass `finalStart` and `finalEnd`.
+      addTask(newContent.trim(), finalStart, finalEnd);
+      
       setNewContent('');
+      setNewStartDate('');
+      setNewEndDate('');
+      setShowDatePicker(false);
+      setIsAdding(false);
+    } else {
+      setIsAdding(false);
+      setShowDatePicker(false);
     }
   };
 
@@ -86,6 +105,7 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
 
       <div className="flex-1">
         <CalendarWidget 
+          tasks={tasks}
           targetDate={targetDate} 
           onChangeDate={(date) => {
             setTargetDate(date);
@@ -162,44 +182,87 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
                 <h2 className="text-[16px] font-semibold text-primary tracking-wide">未完成</h2>
                 <span className="text-[11px] bg-white/60 text-accent font-medium px-1.5 py-0.5 rounded-[4px]">{unfinishedTasks.length}</span>
               </div>
-              {canAddTask && (
-                <button 
-                  translate="no"
-                  onClick={() => setIsAdding(true)}
-                  className="bg-accent text-white px-4 py-1.5 rounded-[8px] text-sm font-medium hover:bg-accent/90 transition-colors shadow-sm"
-                >
-                  新增待办
-                </button>
-              )}
+              <button 
+                translate="no"
+                onClick={() => { 
+                  setIsAdding(true); 
+                  setNewStartDate(targetDate); 
+                  setNewEndDate(targetDate); 
+                }}
+                className="bg-accent text-white p-1.5 rounded-[6px] hover:bg-accent/90 transition-colors shadow-sm flex items-center justify-center"
+              >
+                <Plus size={18} strokeWidth={2.5} />
+              </button>
             </div>
             
             {/* 列表滚动区 */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="flex flex-col gap-1">
                 {isAdding && (
-                  <div className="py-2.5 px-3 -mx-3 rounded-[4px] bg-surface-hover mb-2 flex items-center">
+                  <div className="py-2.5 px-3 -mx-3 rounded-[4px] bg-surface-hover mb-2 flex flex-col gap-2">
                     <input
                       autoFocus
                       type="text"
                       value={newContent}
                       maxLength={200}
                       onChange={(e) => setNewContent(e.target.value)}
-                      onBlur={() => {
-                        handleAddSubmit();
-                        setIsAdding(false);
-                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           handleAddSubmit();
-                          setIsAdding(false);
                         }
                         if (e.key === 'Escape') {
                           setIsAdding(false);
+                          setShowDatePicker(false);
                         }
                       }}
                       placeholder="输入待办事项，按回车保存..."
                       className="w-full bg-transparent outline-none text-[15px] text-primary"
                     />
+                    
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 shrink-0 text-tertiary">
+                          <span className="text-xs">计划日期:</span>
+                          <button 
+                            onClick={() => setShowDatePicker(!showDatePicker)}
+                            className="text-xs bg-white text-primary px-2 py-1 rounded border border-tertiary/20 hover:border-accent/50 transition-colors"
+                          >
+                            {newStartDate} {newEndDate && newEndDate !== newStartDate ? `至 ${newEndDate}` : ''}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => { setIsAdding(false); setShowDatePicker(false); }}
+                            className="text-xs text-tertiary hover:text-primary transition-colors"
+                          >
+                            取消
+                          </button>
+                          <button 
+                            onClick={handleAddSubmit}
+                            className="text-xs bg-accent text-white px-3 py-1 rounded-[4px] hover:bg-accent/90 transition-colors shadow-sm"
+                          >
+                            保存
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {showDatePicker && (
+                        <div className="mt-2 animate-in slide-in-from-top-1 fade-in duration-200">
+                          <DateRangePicker 
+                            startDate={newStartDate}
+                            endDate={newEndDate}
+                            onChange={(start, end) => {
+                              setNewStartDate(start);
+                              setNewEndDate(end);
+                              if (start === end) {
+                                // If they double click or just want a single day, they can close it manually, 
+                                // or we can let them keep picking.
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

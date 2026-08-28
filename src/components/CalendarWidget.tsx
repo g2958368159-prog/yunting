@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
-import type { DateString } from '../types';
+import type { DateString, Task } from '../types';
 
 interface CalendarWidgetProps {
+  tasks: Task[];
   targetDate: DateString;
   onChangeDate: (date: DateString) => void;
   physicalToday: DateString;
 }
 
-export function CalendarWidget({ targetDate, onChangeDate, physicalToday }: CalendarWidgetProps) {
+export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday }: CalendarWidgetProps) {
   const [currentMonth, setCurrentMonth] = useState(parseISO(targetDate));
 
   const targetDateObj = parseISO(targetDate);
@@ -52,19 +53,40 @@ export function CalendarWidget({ targetDate, onChangeDate, physicalToday }: Cale
           <div key={`blank-${i}`} className="h-8" />
         ))}
         {daysInMonth.map(day => {
+          const dayStr = format(day, 'yyyy-MM-dd');
           const isSelected = isSameDay(day, targetDateObj);
           const isToday = isSameDay(day, todayObj);
           // 使用 startOfDay 确保去除时分秒影响后进行严格比较
           const isPast = day.getTime() < todayObj.getTime() && !isToday;
 
+          // 核心点逻辑：依照新规
+          let hasUnfinished = false;
+          let hasFinished = false;
+
+          for (const t of tasks) {
+            if (t.is_deleted) continue;
+            
+            const [start, endStr] = t.creation_date.split('_');
+            const end = endStr || start;
+            
+            const belongsToDay = dayStr >= start && dayStr <= end;
+            
+            if (belongsToDay && !t.completion_date) {
+              hasUnfinished = true;
+            }
+            if (t.completion_date && dayStr >= start && dayStr <= t.completion_date) {
+              hasFinished = true;
+            }
+          }
+
           return (
             <button
               key={day.toISOString()}
               onClick={() => {
-                onChangeDate(format(day, 'yyyy-MM-dd'));
+                onChangeDate(dayStr);
               }}
               className={cn(
-                "h-8 w-8 mx-auto rounded-md text-sm flex items-center justify-center transition-colors relative",
+                "h-8 w-8 mx-auto rounded-md text-sm flex items-center justify-center transition-colors relative flex-col",
                 isSelected 
                   ? "bg-accent text-white font-medium shadow-sm" 
                   : cn(
@@ -73,7 +95,15 @@ export function CalendarWidget({ targetDate, onChangeDate, physicalToday }: Cale
                     )
               )}
             >
-              {isToday ? '今' : format(day, 'd')}
+              <span>{isToday ? '今' : format(day, 'd')}</span>
+              {(hasUnfinished || hasFinished) && (
+                <span className={cn(
+                  "absolute bottom-1 w-1 h-1 rounded-full",
+                  hasUnfinished ? "bg-orange-400" : "bg-tertiary/40",
+                  isSelected && hasUnfinished ? "bg-white/80" : "",
+                  isSelected && !hasUnfinished && hasFinished ? "bg-white/50" : ""
+                )} />
+              )}
             </button>
           );
         })}

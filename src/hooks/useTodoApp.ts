@@ -45,29 +45,37 @@ export function useTodoApp() {
   }, []);
 
   const unfinishedTasks = useMemo(() => {
-    return tasks.filter(t => 
-      !t.is_deleted && 
-      (!t.completion_date || t.completion_date > targetDate) && 
-      (
-        (t.creation_date === targetDate) || 
-        (t.creation_date < targetDate && targetDate <= physicalToday)
-      )
-    );
-  }, [tasks, targetDate, physicalToday]);
-
-  const finishedTasks = useMemo(() => {
-    return tasks.filter(t => 
-      !t.is_deleted && 
-      t.creation_date <= targetDate && 
-      t.completion_date === targetDate
-    );
+    return tasks.filter(t => {
+      if (t.is_deleted) return false;
+      const [start, endStr] = t.creation_date.split('_');
+      const end = endStr || start;
+      
+      const belongsToDay = targetDate >= start && targetDate <= end;
+      
+      // 未完成的待办：在时间区间内，且绝对没有被完成过
+      return belongsToDay && !t.completion_date;
+    });
   }, [tasks, targetDate]);
 
-  const addTask = async (content: string) => {
+  const finishedTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (t.is_deleted || !t.completion_date) return false;
+      const [start] = t.creation_date.split('_');
+      
+      // 已完成的待办：从开始时间，一直到完成时间，这段区间内的每一天都会显示
+      return targetDate >= start && targetDate <= t.completion_date;
+    });
+  }, [tasks, targetDate]);
+
+  const addTask = async (content: string, startDate: string, endDate: string) => {
+    const finalCreationDate = endDate && endDate > startDate 
+      ? `${startDate}_${endDate}` 
+      : startDate;
+
     const newTask = {
       id: crypto.randomUUID(),
       content,
-      creation_date: targetDate,
+      creation_date: finalCreationDate,
       completion_date: null,
       is_deleted: false,
     };
@@ -88,7 +96,7 @@ export function useTodoApp() {
     if (!task) return;
     
     const isCompleted = !!task.completion_date;
-    const newCompletionDate = isCompleted ? null : physicalToday;
+    const newCompletionDate = isCompleted ? null : targetDate;
 
     // 乐观更新 UI
     setTasks(prev => prev.map(t => 
@@ -103,14 +111,20 @@ export function useTodoApp() {
     if (error) console.error('Error toggling task:', error);
   };
 
-  const updateTask = async (id: string, newContent: string) => {
-    setTasks(prev => prev.map(t => 
-      t.id === id ? { ...t, content: newContent } : t
-    ));
+  const updateTask = async (id: string, newContent: string, newCreationDate?: string) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        return { ...t, content: newContent, ...(newCreationDate ? { creation_date: newCreationDate } : {}) };
+      }
+      return t;
+    }));
+
+    const updates: any = { content: newContent };
+    if (newCreationDate) updates.creation_date = newCreationDate;
 
     const { error } = await supabase
       .from('tasks')
-      .update({ content: newContent })
+      .update(updates)
       .eq('id', id);
     if (error) console.error('Error updating task:', error);
   };
@@ -128,7 +142,7 @@ export function useTodoApp() {
     if (error) console.error('Error deleting task:', error);
   };
 
-  const canAddTask = targetDate >= physicalToday;
+  const canAddTask = true;
 
   return {
     tasks,

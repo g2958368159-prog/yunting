@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { Task } from '../types';
 import { Check, Trash2, Edit2, X, RotateCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { DateRangePicker } from './DateRangePicker';
 
 interface TaskItemProps {
   task: Task;
@@ -9,13 +10,19 @@ interface TaskItemProps {
   targetDate: string;
   onToggle: () => void;
   onDelete: () => void;
-  onUpdate: (content: string) => void;
+  onUpdate: (content: string, creationDate?: string) => void;
 }
 
 export function TaskItem({ task, isCompleted, targetDate, onToggle, onDelete, onUpdate }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(task.content);
+  
+  const [start, endStr] = task.creation_date.split('_');
+  const [editStartDate, setEditStartDate] = useState(start);
+  const [editEndDate, setEditEndDate] = useState(endStr || start);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,14 +33,19 @@ export function TaskItem({ task, isCompleted, targetDate, onToggle, onDelete, on
 
   const handleSave = () => {
     if (editContent.trim()) {
-      onUpdate(editContent.trim());
+      const finalEndDate = editEndDate && editEndDate > editStartDate ? editEndDate : '';
+      const finalCreationDate = finalEndDate ? `${editStartDate}_${finalEndDate}` : editStartDate;
+      onUpdate(editContent.trim(), finalCreationDate);
     } else {
       setEditContent(task.content);
+      setEditStartDate(start);
+      setEditEndDate(endStr || start);
     }
     setIsEditing(false);
+    setShowDatePicker(false);
   };
 
-  const isCrossDay = task.completion_date && task.completion_date > task.creation_date;
+  const isCrossDay = task.completion_date && task.completion_date > start;
   
   return (
     <div className="group flex items-center justify-between py-2.5 px-3 -mx-3 rounded-[4px] transition-all duration-200 hover:bg-surface-hover/80 border border-transparent hover:border-tertiary/5 relative overflow-hidden">
@@ -41,16 +53,70 @@ export function TaskItem({ task, isCompleted, targetDate, onToggle, onDelete, on
       {/* 纯净的文本区域，无勾选框 */}
       <div className="flex-1 min-w-0 pr-4">
         {isEditing ? (
-          <input
-            ref={inputRef}
-            type="text"
-            value={editContent}
-            maxLength={200}
-            onChange={(e) => setEditContent(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            className="w-full bg-transparent border-b border-accent/50 outline-none text-[15px] text-primary pb-0.5"
-          />
+          <div className="flex flex-col gap-2 w-full">
+            <input
+              ref={inputRef}
+              type="text"
+              value={editContent}
+              maxLength={200}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') {
+                  setIsEditing(false);
+                  setEditContent(task.content);
+                  setEditEndDate(endStr || '');
+                }
+              }}
+              className="w-full bg-transparent border-b border-accent/50 outline-none text-[15px] text-primary pb-0.5"
+            />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 shrink-0 text-tertiary">
+                  <span className="text-xs">计划日期:</span>
+                  <button 
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    className="text-xs bg-white text-primary px-2 py-1 rounded border border-tertiary/20 hover:border-accent/50 transition-colors"
+                  >
+                    {editStartDate} {editEndDate && editEndDate !== editStartDate ? `至 ${editEndDate}` : ''}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => { 
+                      setIsEditing(false); 
+                      setEditContent(task.content); 
+                      setEditStartDate(start);
+                      setEditEndDate(endStr || start); 
+                      setShowDatePicker(false);
+                    }}
+                    className="text-xs text-tertiary hover:text-primary transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button 
+                    onClick={handleSave}
+                    className="text-xs bg-accent text-white px-3 py-1 rounded-[4px] hover:bg-accent/90 transition-colors shadow-sm"
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+              
+              {showDatePicker && (
+                <div className="mt-2 animate-in slide-in-from-top-1 fade-in duration-200">
+                  <DateRangePicker 
+                    startDate={editStartDate}
+                    endDate={editEndDate}
+                    onChange={(start, end) => {
+                      setEditStartDate(start);
+                      setEditEndDate(end);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col min-w-0 cursor-text" onDoubleClick={() => setIsEditing(true)}>
             <span className={cn(
@@ -60,11 +126,15 @@ export function TaskItem({ task, isCompleted, targetDate, onToggle, onDelete, on
               {task.content}
             </span>
             {/* 快照小字逻辑 */}
-            {!isCompleted && task.creation_date !== targetDate && (
-              <span className="text-[11px] text-tertiary/70 mt-0.5 tracking-wide">创建于 {task.creation_date}</span>
+            {!isCompleted && start !== targetDate && (
+              <span className="text-[11px] text-tertiary/70 mt-0.5 tracking-wide">
+                计划: {start}{endStr ? ` 至 ${endStr}` : ''}
+              </span>
             )}
             {isCompleted && isCrossDay && (
-              <span className="text-[11px] text-tertiary/70 mt-0.5 tracking-wide">始 {task.creation_date}</span>
+              <span className="text-[11px] text-tertiary/70 mt-0.5 tracking-wide">
+                计划: {start}{endStr ? ` 至 ${endStr}` : ''}
+              </span>
             )}
           </div>
         )}
