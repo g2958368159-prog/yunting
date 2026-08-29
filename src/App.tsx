@@ -279,7 +279,7 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
                       targetDate={targetDate}
                       onToggle={() => toggleTask(task.id)}
                       onDelete={() => deleteTask(task.id)}
-                      onUpdate={(content) => updateTask(task.id, content)}
+                      onUpdate={(content, creationDate) => updateTask(task.id, content, creationDate)}
                     />
                   ))
                 )}
@@ -312,7 +312,7 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
                       targetDate={targetDate}
                       onToggle={() => toggleTask(task.id)}
                       onDelete={() => deleteTask(task.id)}
-                      onUpdate={(content) => updateTask(task.id, content)}
+                      onUpdate={(content, creationDate) => updateTask(task.id, content, creationDate)}
                     />
                   ))}
                 </div>
