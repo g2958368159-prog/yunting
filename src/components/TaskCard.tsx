@@ -7,19 +7,17 @@ import { cn } from '../lib/utils';
 interface TaskCardProps {
   title: string;
   tasks: Task[];
-  targetDate: string;
   isCompleted: boolean;
   canAddTask?: boolean;
   onAddTask?: (content: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, content: string) => void;
+  onUpdate: (id: string, content: string, creationDate?: string) => void;
 }
 
 export function TaskCard({ 
   title, 
   tasks, 
-  targetDate, 
   isCompleted,
   canAddTask,
   onAddTask,
@@ -99,10 +97,9 @@ export function TaskCard({
               key={task.id}
               task={task}
               isCompleted={isCompleted}
-              targetDate={targetDate}
               onToggle={() => onToggle(task.id)}
               onDelete={() => onDelete(task.id)}
-              onUpdate={(content) => onUpdate(task.id, content)}
+              onUpdate={(content, creationDate) => onUpdate(task.id, content, creationDate)}
             />
           ))
         )}

@@ -7,13 +7,12 @@ import { DateRangePicker } from './DateRangePicker';
 interface TaskItemProps {
   task: Task;
   isCompleted: boolean;
-  targetDate: string;
   onToggle: () => void;
   onDelete: () => void;
   onUpdate: (content: string, creationDate?: string) => void;
 }
 
-export function TaskItem({ task, isCompleted, targetDate, onToggle, onDelete, onUpdate }: TaskItemProps) {
+export function TaskItem({ task, isCompleted, onToggle, onDelete, onUpdate }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(task.content);
@@ -44,8 +43,6 @@ export function TaskItem({ task, isCompleted, targetDate, onToggle, onDelete, on
     setIsEditing(false);
     setShowDatePicker(false);
   };
-
-  const isCrossDay = task.completion_date && task.completion_date > start;
   
   return (
     <div className="group flex items-center justify-between py-2.5 px-3 -mx-3 rounded-[4px] transition-all duration-200 hover:bg-surface-hover/80 border border-transparent hover:border-tertiary/5 relative overflow-hidden">
@@ -125,15 +122,10 @@ export function TaskItem({ task, isCompleted, targetDate, onToggle, onDelete, on
             )}>
               {task.content}
             </span>
-            {/* 快照小字逻辑 */}
-            {!isCompleted && start !== targetDate && (
+            {/* 快照小字逻辑：只要是长待办，任何时候都显示它的完整周期 */}
+            {endStr && endStr !== start && (
               <span className="text-[11px] text-tertiary/70 mt-0.5 tracking-wide">
-                计划: {start}{endStr ? ` 至 ${endStr}` : ''}
-              </span>
-            )}
-            {isCompleted && isCrossDay && (
-              <span className="text-[11px] text-tertiary/70 mt-0.5 tracking-wide">
-                计划: {start}{endStr ? ` 至 ${endStr}` : ''}
+                计划: {start} 至 {endStr}
               </span>
             )}
           </div>
