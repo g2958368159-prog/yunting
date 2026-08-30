@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { DateString, Task } from '../types';
@@ -12,29 +12,31 @@ interface CalendarWidgetProps {
 }
 
 export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday }: CalendarWidgetProps) {
-  const [currentMonth, setCurrentMonth] = useState(parseISO(targetDate));
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(parseISO(targetDate)));
 
   const targetDateObj = parseISO(targetDate);
   const todayObj = parseISO(physicalToday);
 
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth)
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+
+  const calendarDays = eachDayOfInterval({
+    start: calendarStart,
+    end: calendarEnd
   });
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-  
-  const startDay = daysInMonth[0].getDay();
-  const blanks = Array.from({ length: startDay }, (_, i) => i);
 
   return (
     <div className="w-full select-none">
       <div className="flex items-center justify-between mb-4 px-1">
         <h3 className="font-medium text-primary text-sm">
-          {format(currentMonth, 'yyyy年 MM月')}
+          {format(currentMonth, 'yyyy年MM月')}
         </h3>
         <div className="flex gap-1 text-tertiary">
           <button onClick={prevMonth} className="hover:text-primary transition-colors p-1 rounded hover:bg-surface-hover"><ChevronLeft size={16} /></button>
@@ -49,15 +51,11 @@ export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday 
       </div>
 
       <div className="grid grid-cols-7 gap-y-1">
-        {blanks.map(i => (
-          <div key={`blank-${i}`} className="h-8" />
-        ))}
-        {daysInMonth.map(day => {
+        {calendarDays.map(day => {
           const dayStr = format(day, 'yyyy-MM-dd');
           const isSelected = isSameDay(day, targetDateObj);
           const isToday = isSameDay(day, todayObj);
-          // 使用 startOfDay 确保去除时分秒影响后进行严格比较
-          const isPast = day.getTime() < todayObj.getTime() && !isToday;
+          const isCurrentMonth = isSameMonth(day, currentMonth);
 
           // 核心点逻辑：依照新规
           let hasUnfinished = false;
@@ -84,6 +82,9 @@ export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday 
               key={day.toISOString()}
               onClick={() => {
                 onChangeDate(dayStr);
+                if (!isCurrentMonth) {
+                  setCurrentMonth(startOfMonth(day));
+                }
               }}
               className={cn(
                 "h-8 w-8 mx-auto rounded-md text-sm flex items-center justify-center transition-colors relative flex-col",
@@ -91,11 +92,11 @@ export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday 
                   ? "bg-accent text-white font-medium shadow-sm" 
                   : cn(
                       "hover:bg-surface-hover",
-                      isToday ? "text-accent" : (isPast ? "text-tertiary opacity-50 font-normal" : "text-primary")
+                      !isCurrentMonth ? "text-tertiary opacity-40 font-normal" : (isToday ? "text-accent font-medium" : "text-primary")
                     )
               )}
             >
-              <span>{isToday ? '今' : format(day, 'd')}</span>
+              <span>{isToday && isCurrentMonth ? '今' : format(day, 'd')}</span>
               {(hasUnfinished || hasFinished) && (
                 <span className={cn(
                   "absolute bottom-1 w-1 h-1 rounded-full",
