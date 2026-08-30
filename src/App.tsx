@@ -3,6 +3,10 @@ import { useTodoApp } from './hooks/useTodoApp';
 import { TaskItem } from './components/TaskItem';
 import { CalendarWidget } from './components/CalendarWidget';
 import { DateRangePicker } from './components/DateRangePicker';
+import { SortableTaskItem } from './components/SortableTaskItem';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Calendar as CalendarIcon, ChevronDown, X, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from './lib/supabase';
@@ -56,6 +60,7 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
     toggleTask,
     updateTask,
     deleteTask,
+    reorderTasks,
   } = useTodoApp();
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -64,6 +69,24 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
   const [newEndDate, setNewEndDate] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      reorderTasks(active.id as string, over.id as string);
+    }
+  };
 
   // Date Titles
   const targetDateObj = parseISO(targetDate);
@@ -271,16 +294,27 @@ function TodoAppContent({ onLogout, user }: { onLogout: () => void; user: User }
                     <p className="text-sm">今日暂无安排，尽情享受留白</p>
                   </div>
                 ) : (
-                  unfinishedTasks.map(task => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      isCompleted={false}
-                      onToggle={() => toggleTask(task.id)}
-                      onDelete={() => deleteTask(task.id)}
-                      onUpdate={(content, creationDate) => updateTask(task.id, content, creationDate)}
-                    />
-                  ))
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext 
+                      items={unfinishedTasks.map(t => t.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {unfinishedTasks.map(task => (
+                        <SortableTaskItem
+                          key={task.id}
+                          task={task}
+                          isCompleted={false}
+                          onToggle={() => toggleTask(task.id)}
+                          onDelete={() => deleteTask(task.id)}
+                          onUpdate={(content, creationDate) => updateTask(task.id, content, creationDate)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
             </div>

@@ -31,6 +31,7 @@ export function useTodoApp() {
         .from('tasks')
         .select('*')
         .eq('is_deleted', false) // 过滤掉已删除的
+        .order('order_index', { ascending: true })
         .order('created_at', { ascending: true });
       
       if (error) {
@@ -72,12 +73,15 @@ export function useTodoApp() {
       ? `${startDate}_${endDate}` 
       : startDate;
 
+    const maxOrder = tasks.length > 0 ? Math.max(...tasks.map(t => t.order_index || 0)) : 0;
+    
     const newTask = {
       id: crypto.randomUUID(),
       content,
       creation_date: finalCreationDate,
       completion_date: null,
       is_deleted: false,
+      order_index: maxOrder + 1,
     };
     
     // 乐观更新 UI
@@ -87,7 +91,6 @@ export function useTodoApp() {
     const { error } = await supabase.from('tasks').insert([newTask]);
     if (error) {
       console.error('Error adding task:', error);
-      // 如果出错可以回滚 UI，这里从简处理
     }
   };
 
@@ -112,15 +115,41 @@ export function useTodoApp() {
   };
 
   const updateTask = async (id: string, newContent: string, newCreationDate?: string) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id === id) {
-        return { ...t, content: newContent, ...(newCreationDate ? { creation_date: newCreationDate } : {}) };
+    let newOrderIndex: number | undefined;
+    
+    setTasks(prev => {
+      let updatedOrder = false;
+      const targetTask = prev.find(t => t.id === id);
+      
+      if (targetTask && newCreationDate && newCreationDate !== targetTask.creation_date) {
+        const [oldStart, oldEnd] = targetTask.creation_date.split('_');
+        const [newStart, newEnd] = newCreationDate.split('_');
+        const wasSingleDay = !oldEnd || oldEnd === oldStart;
+        const isNowMultiDay = newEnd && newEnd !== newStart;
+        
+        // 如果是从单日改为了多日（长待办），则自动置底
+        if (wasSingleDay && isNowMultiDay) {
+          newOrderIndex = (prev.length > 0 ? Math.max(...prev.map(t => t.order_index || 0)) : 0) + 1;
+          updatedOrder = true;
+        }
       }
-      return t;
-    }));
+
+      return prev.map(t => {
+        if (t.id === id) {
+          return { 
+            ...t, 
+            content: newContent, 
+            ...(newCreationDate ? { creation_date: newCreationDate } : {}),
+            ...(updatedOrder && newOrderIndex !== undefined ? { order_index: newOrderIndex } : {})
+          };
+        }
+        return t;
+      });
+    });
 
     const updates: any = { content: newContent };
     if (newCreationDate) updates.creation_date = newCreationDate;
+    if (newOrderIndex !== undefined) updates.order_index = newOrderIndex;
 
     const { error } = await supabase
       .from('tasks')
@@ -142,6 +171,33 @@ export function useTodoApp() {
     if (error) console.error('Error deleting task:', error);
   };
 
+  const reorderTasks = async (activeId: string, overId: string) => {
+    setTasks(prev => {
+      const oldIndex = prev.findIndex(t => t.id === activeId);
+      const newIndex = prev.findIndex(t => t.id === overId);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      
+      const newTasks = [...prev];
+      const [moved] = newTasks.splice(oldIndex, 1);
+      newTasks.splice(newIndex, 0, moved);
+      
+      const finalTasks = newTasks.map((t, i) => ({ ...t, order_index: i }));
+      
+      // 找出发生变化的
+      const changedTasks = finalTasks.filter(t => {
+        const oldTask = prev.find(p => p.id === t.id);
+        return oldTask && oldTask.order_index !== t.order_index;
+      });
+
+      // 批量发送更新请求
+      Promise.all(changedTasks.map(t => 
+        supabase.from('tasks').update({ order_index: t.order_index }).eq('id', t.id)
+      )).catch(err => console.error('Error reordering tasks:', err));
+      
+      return finalTasks;
+    });
+  };
+
   const canAddTask = true;
 
   return {
@@ -157,6 +213,7 @@ export function useTodoApp() {
     toggleTask,
     updateTask,
     deleteTask,
+    reorderTasks,
     isLoading,
   };
 }

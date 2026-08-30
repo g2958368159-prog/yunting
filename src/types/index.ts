@@ -6,6 +6,7 @@ export interface Task {
   creation_date: DateString;
   completion_date: DateString | null;
   is_deleted: boolean;
+  order_index: number;
 }
 
 export interface AppState {
