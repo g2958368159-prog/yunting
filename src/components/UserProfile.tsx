@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { LogOut } from 'lucide-react';
+import { LogOut, Palette } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-export function UserProfile({ user, onLogout }: { user: User; onLogout: () => void }) {
+export function UserProfile({ user, onLogout, onToggleTheme }: { user: User; onLogout: () => void; onToggleTheme: () => Promise<void> }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [name, setName] = useState(user.user_metadata?.full_name || '探索者');
   const [avatar, setAvatar] = useState(user.user_metadata?.avatar_url || '');
@@ -44,7 +44,7 @@ export function UserProfile({ user, onLogout }: { user: User; onLogout: () => vo
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarUpload} />
       <div 
         className="w-9 h-9 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent font-medium text-sm shrink-0 cursor-pointer overflow-hidden relative hover:ring-2 hover:ring-accent/20 transition-all"
@@ -63,12 +63,19 @@ export function UserProfile({ user, onLogout }: { user: User; onLogout: () => vo
             onChange={e => setName(e.target.value)}
             onBlur={handleNameSave}
             onKeyDown={handleNameSave}
-            className="w-full bg-transparent border-b border-accent/50 outline-none text-[14px] text-accent font-medium"
+            className="w-full bg-transparent border-b border-primary/50 outline-none text-[14px] text-primary font-medium"
           />
         ) : (
-          <div className="text-[14px] font-medium text-accent truncate cursor-pointer select-none" title="双击修改昵称">{name}</div>
+          <div className="text-[14px] font-medium text-primary truncate cursor-pointer select-none" title="双击修改昵称">{name}</div>
         )}
       </div>
+      <button 
+        onClick={onToggleTheme}
+        title="切换主题颜色"
+        className="text-tertiary hover:text-accent transition-colors p-1.5 rounded-[4px] hover:bg-accent/5 shrink-0"
+      >
+        <Palette size={16} />
+      </button>
       <button 
         onClick={onLogout}
         title="退出登录"

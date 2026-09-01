@@ -35,7 +35,7 @@ export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday 
   return (
     <div className="w-full select-none">
       <div className="flex items-center justify-between mb-4 px-1">
-        <h3 className="font-medium text-primary text-sm">
+        <h3 className="font-bold text-primary text-sm">
           {format(currentMonth, 'yyyy年MM月')}
         </h3>
         <div className="flex gap-1 text-tertiary">
@@ -92,11 +92,11 @@ export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday 
                   ? "bg-accent text-white font-medium shadow-sm" 
                   : cn(
                       "hover:bg-surface-hover",
-                      !isCurrentMonth ? "text-tertiary opacity-40 font-normal" : (isToday ? "text-accent font-medium" : "text-primary")
+                      !isCurrentMonth ? "text-tertiary font-normal" : (isToday ? "text-accent font-medium" : "text-primary")
                     )
               )}
             >
-              <span>{isToday && isCurrentMonth ? '今' : format(day, 'd')}</span>
+              <span className={!isCurrentMonth && !isSelected ? "opacity-40" : ""}>{isToday && isCurrentMonth ? '今' : format(day, 'd')}</span>
               {(hasUnfinished || hasFinished) && (
                 <span className={cn(
                   "absolute bottom-1 w-1 h-1 rounded-full",

@@ -7,17 +7,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        app: '#F3F5EF',
-        surface: '#FBFDF8',
-        'surface-hover': '#ECF0E6',
-        primary: '#3C4139',
-        secondary: '#767D6E',
-        tertiary: '#A2A89A',
-        accent: '#56705A',
-        'accent-soft': '#DFE7D8',
-        'today-dot': '#B5A869',
-        'completed-bg': '#EEF1E8',
-        danger: '#A96F65'
+        app: 'var(--color-app)',
+        surface: 'var(--color-surface)',
+        'surface-hover': 'var(--color-surface-hover)',
+        primary: 'var(--color-primary)',
+        secondary: 'var(--color-secondary)',
+        tertiary: 'var(--color-tertiary)',
+        accent: 'var(--color-accent)',
+        'accent-soft': 'var(--color-accent-soft)',
+        'today-dot': 'var(--color-today-dot)',
+        'completed-bg': 'var(--color-completed-bg)',
+        danger: 'var(--color-danger)'
       },
       borderRadius: {
         'sm': '8px',

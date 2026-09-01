@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-export function MobileUserMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
+export function MobileUserMenu({ user, onLogout, onToggleTheme }: { user: User; onLogout: () => void; onToggleTheme: () => Promise<void> }) {
   const [isOpen, setIsOpen] = useState(false);
   const [avatar, setAvatar] = useState(user.user_metadata?.avatar_url || '');
   const name = user.user_metadata?.full_name || '探索者';
@@ -54,6 +54,12 @@ export function MobileUserMenu({ user, onLogout }: { user: User; onLogout: () =>
               onClick={() => { setIsOpen(false); fileInputRef.current?.click(); }}
             >
               更换头像
+            </button>
+            <button 
+              className="w-full text-left px-4 py-2.5 text-[14px] text-primary hover:bg-surface-hover transition-colors"
+              onClick={() => { setIsOpen(false); void onToggleTheme(); }}
+            >
+              切换主题
             </button>
             <button 
               className="w-full text-left px-4 py-2.5 text-[14px] text-danger hover:bg-danger/5 transition-colors"

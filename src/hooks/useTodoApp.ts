@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import type { Task, DateString } from '../types';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
+import { getRolloverCreationDate } from '../lib/rollover';
 
 export function useTodoApp() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -37,7 +38,36 @@ export function useTodoApp() {
       if (error) {
         console.error('Fetch error:', error);
       } else if (data) {
-        setTasks(data);
+        let currentTasks = data as Task[];
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        
+        // Auto Rollover Logic
+        const tasksToRollover = currentTasks.filter(t => {
+          if (t.is_deleted || t.completion_date || !t.auto_rollover) return false;
+          const [, endStr] = t.creation_date.split('_');
+          const end = endStr || t.creation_date;
+          return end < todayStr;
+        });
+
+        if (tasksToRollover.length > 0) {
+          const updates = tasksToRollover.map(t => ({
+            ...t,
+            creation_date: getRolloverCreationDate(t.creation_date, todayStr)
+          }));
+          
+          // Optimistically update local state
+          currentTasks = currentTasks.map(t => {
+            const rolledOver = updates.find(u => u.id === t.id);
+            return rolledOver ? rolledOver : t;
+          });
+
+          // Sync to Supabase in background
+          Promise.all(updates.map(u => 
+            supabase.from('tasks').update({ creation_date: u.creation_date }).eq('id', u.id)
+          )).catch(err => console.error('Rollover error:', err));
+        }
+
+        setTasks(currentTasks);
       }
       setIsLoading(false);
     };
@@ -68,7 +98,7 @@ export function useTodoApp() {
     });
   }, [tasks, targetDate]);
 
-  const addTask = async (content: string, startDate: string, endDate: string) => {
+  const addTask = async (content: string, startDate: string, endDate: string, autoRollover: boolean = false) => {
     const finalCreationDate = endDate && endDate > startDate 
       ? `${startDate}_${endDate}` 
       : startDate;
@@ -82,6 +112,7 @@ export function useTodoApp() {
       completion_date: null,
       is_deleted: false,
       order_index: maxOrder + 1,
+      auto_rollover: autoRollover,
     };
     
     // 乐观更新 UI
@@ -114,7 +145,7 @@ export function useTodoApp() {
     if (error) console.error('Error toggling task:', error);
   };
 
-  const updateTask = async (id: string, newContent: string, newCreationDate?: string) => {
+  const updateTask = async (id: string, newContent: string, newCreationDate?: string, autoRollover?: boolean) => {
     let newOrderIndex: number | undefined;
     
     setTasks(prev => {
@@ -140,7 +171,8 @@ export function useTodoApp() {
             ...t, 
             content: newContent, 
             ...(newCreationDate ? { creation_date: newCreationDate } : {}),
-            ...(updatedOrder && newOrderIndex !== undefined ? { order_index: newOrderIndex } : {})
+            ...(updatedOrder && newOrderIndex !== undefined ? { order_index: newOrderIndex } : {}),
+            ...(autoRollover !== undefined ? { auto_rollover: autoRollover } : {})
           };
         }
         return t;
@@ -150,11 +182,9 @@ export function useTodoApp() {
     const updates: any = { content: newContent };
     if (newCreationDate) updates.creation_date = newCreationDate;
     if (newOrderIndex !== undefined) updates.order_index = newOrderIndex;
+    if (autoRollover !== undefined) updates.auto_rollover = autoRollover;
 
-    const { error } = await supabase
-      .from('tasks')
-      .update(updates)
-      .eq('id', id);
+    const { error } = await supabase.from('tasks').update(updates).eq('id', id);
     if (error) console.error('Error updating task:', error);
   };
 
@@ -198,6 +228,19 @@ export function useTodoApp() {
     });
   };
 
+  const hasPreviousMonthUnfinished = useMemo(() => {
+    const today = new Date(physicalToday);
+    const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthPrefix = format(lastMonthDate, 'yyyy-MM');
+    
+    return tasks.some(t => {
+      if (t.is_deleted || t.completion_date) return false;
+      const [, endStr] = t.creation_date.split('_');
+      const end = endStr || t.creation_date;
+      return end.startsWith(lastMonthPrefix);
+    });
+  }, [tasks, physicalToday]);
+
   const canAddTask = true;
 
   return {
@@ -208,12 +251,13 @@ export function useTodoApp() {
     physicalToday,
     unfinishedTasks,
     finishedTasks,
+    isLoading,
     canAddTask,
+    hasPreviousMonthUnfinished,
     addTask,
     toggleTask,
     updateTask,
     deleteTask,
-    reorderTasks,
-    isLoading,
+    reorderTasks
   };
 }

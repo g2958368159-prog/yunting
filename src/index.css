@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-app: #F3F5EF;
+    --color-surface: #FBFDF8;
+    --color-surface-hover: #ECF0E6;
+    --color-primary: #333333;
+    --color-secondary: #767D6E;
+    --color-tertiary: #A2A89A;
+    --color-accent: #56705A;
+    --color-accent-soft: #DFE7D8;
+    --color-today-dot: #B5A869;
+    --color-completed-bg: #EEF1E8;
+    --color-danger: #A96F65;
+    --color-task-editor-bg: #ECF0E6;
+  }
+
+  [data-theme="orange"] {
+    --color-app: #F4F5F7;
+    --color-surface: #FFFFFF;
+    --color-surface-hover: #FFF3E0;
+    --color-primary: #333333;
+    --color-secondary: #4B5563;
+    --color-tertiary: #9CA3AF;
+    --color-accent: #F97316;
+    --color-accent-soft: #FFEDD5;
+    --color-today-dot: #F59E0B;
+    --color-completed-bg: #F3F4F6;
+    --color-danger: #EF4444;
+    --color-task-editor-bg: #FEF7F1;
+  }
+
   body {
     @apply bg-app text-primary min-h-screen antialiased;
   }

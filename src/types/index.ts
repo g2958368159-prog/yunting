@@ -7,6 +7,7 @@ export interface Task {
   completion_date: DateString | null;
   is_deleted: boolean;
   order_index: number;
+  auto_rollover: boolean;
 }
 
 export interface AppState {
