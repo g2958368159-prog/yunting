@@ -85,7 +85,8 @@ export function MobileUserMenu({ user, onLogout, theme, onSetTheme, dailySummary
                   role="switch"
                   aria-checked={dailySummaryEnabled}
                   onClick={() => void onSetDailySummaryEnabled(!dailySummaryEnabled)}
-                  className={`h-5 w-9 rounded-full p-0.5 transition-colors ${dailySummaryEnabled ? 'bg-accent' : 'bg-tertiary/30'}`}
+                  aria-label="切换每日总结"
+                  className={`h-5 w-9 min-w-9 shrink-0 rounded-full border p-0.5 shadow-inner transition-all focus:outline-none focus:ring-2 focus:ring-accent/30 ${dailySummaryEnabled ? 'border-accent bg-accent' : 'border-slate-300 bg-slate-200'}`}
                 >
                   <span className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${dailySummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                 </button>
