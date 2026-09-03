@@ -73,6 +73,7 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
   const [newAutoRollover, setNewAutoRollover] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [addError, setAddError] = useState('');
 
   const currentMonthKey = format(new Date(), 'yyyy-MM');
   const [hidePrevMonthAlert, setHidePrevMonthAlert] = useState(() => {
@@ -102,7 +103,7 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
   const headerTitle = format(targetDateObj, 'MM月dd日');
   const weekDay = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][targetDateObj.getDay()];
 
-  const handleAddSubmit = () => {
+  const handleAddSubmit = async () => {
     if (newContent.trim()) {
       const finalStart = newStartDate || targetDate;
       const finalEnd = newEndDate || finalStart;
@@ -111,14 +112,18 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
       // But wait, the current addTask signature is `addTask(content: string, endDate?: string)`.
       // I should update it to accept the raw creation_date string.
       // Let's change how we call it. For now, let's just pass `finalStart` and `finalEnd`.
-      addTask(newContent.trim(), finalStart, finalEnd, newAutoRollover);
-      
-      setNewContent('');
-      setNewStartDate('');
-      setNewEndDate('');
-      setNewAutoRollover(true);
-      setShowDatePicker(false);
-      setIsAdding(false);
+      try {
+        await addTask(newContent.trim(), finalStart, finalEnd, newAutoRollover);
+        setNewContent('');
+        setNewStartDate('');
+        setNewEndDate('');
+        setNewAutoRollover(true);
+        setShowDatePicker(false);
+        setIsAdding(false);
+        setAddError('');
+      } catch {
+        setAddError('保存失败，请检查网络后重试。');
+      }
     } else {
       setIsAdding(false);
       setNewAutoRollover(true);
@@ -241,6 +246,7 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
                 setNewStartDate(targetDate); 
                 setNewEndDate(targetDate); 
                 setNewAutoRollover(true);
+                setAddError('');
               }}
               className="bg-accent text-white p-1.5 rounded-[6px] hover:opacity-90 transition-opacity shadow-sm flex items-center justify-center"
             >
@@ -267,7 +273,10 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
                       type="text"
                       value={newContent}
                       maxLength={200}
-                      onChange={(e) => setNewContent(e.target.value)}
+                      onChange={(e) => {
+                        setNewContent(e.target.value);
+                        setAddError('');
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           handleAddSubmit();
@@ -275,11 +284,13 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
                         if (e.key === 'Escape') {
                           setIsAdding(false);
                           setShowDatePicker(false);
+                          setAddError('');
                         }
                       }}
                       placeholder="输入待办事项，按回车保存..."
                       className="w-full bg-transparent outline-none text-[15px] text-primary"
                     />
+                    {addError && <p className="text-xs text-red-600">{addError}</p>}
                     
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
@@ -304,7 +315,7 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
                         </div>
                         <div className="flex items-center gap-2">
                           <button 
-                            onClick={() => { setIsAdding(false); setShowDatePicker(false); }}
+                            onClick={() => { setIsAdding(false); setShowDatePicker(false); setAddError(''); }}
                             className="text-xs text-tertiary hover:text-primary transition-colors"
                           >
                             取消

@@ -115,14 +115,14 @@ export function useTodoApp() {
       auto_rollover: autoRollover,
     };
     
-    // 乐观更新 UI
-    setTasks(prev => [...prev, newTask]);
-
-    // 写入云端
+    // 先确认云端写入成功，避免写入失败时界面仍显示一条刷新后消失的待办。
     const { error } = await supabase.from('tasks').insert([newTask]);
     if (error) {
       console.error('Error adding task:', error);
+      throw error;
     }
+
+    setTasks(prev => [...prev, newTask]);
   };
 
   const toggleTask = async (id: string) => {
