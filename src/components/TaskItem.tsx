@@ -140,7 +140,7 @@ export function TaskItem({ task, isCompleted, onToggle, onDelete, onUpdate }: Ta
             </div>
           </div>
         ) : (
-          <div className="flex flex-col min-w-0 cursor-text" onDoubleClick={beginEditing}>
+          <div className="flex flex-col min-w-0">
             <span className={cn(
               "text-[15px] truncate transition-all duration-300",
               isCompleted ? "text-tertiary" : "text-primary"
