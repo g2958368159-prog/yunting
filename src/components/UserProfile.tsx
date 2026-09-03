@@ -101,7 +101,7 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
           <Settings size={16} />
         </button>
         {isSettingsOpen && (
-          <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-tertiary/10 bg-surface p-3 shadow-lg z-20">
+          <div className="absolute bottom-full right-[-0.75rem] mb-2 w-56 rounded-lg border border-tertiary/10 bg-surface p-3 shadow-lg z-20">
             <p className="mb-2 text-xs font-medium text-primary">主题</p>
             <div className="flex gap-2 mb-4">
               {(['green', 'orange'] as ThemeName[]).map((option) => (
