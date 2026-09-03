@@ -290,7 +290,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
             </div>
             
             {/* 列表滚动区 */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-x-hidden overflow-y-auto px-6 py-4">
               <div className="flex flex-col gap-1">
                 {isAdding && (
                   <div className="py-2.5 px-3 -mx-3 rounded-[4px] bg-[var(--color-task-editor-bg)] mb-2 flex flex-col gap-2">
@@ -417,7 +417,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
             </div>
             
             {/* 列表滚动区 */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-x-hidden overflow-y-auto px-6 py-4">
               {finishedTasks.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center min-h-[200px] text-tertiary/40 mt-4">
                   <Archive size={40} strokeWidth={1.5} className="mb-3 opacity-30" />

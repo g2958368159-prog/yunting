@@ -21,8 +21,9 @@ export function SortableTaskItem(props: SortableTaskItemProps) {
     isDragging,
   } = useSortable({ id: props.task.id });
 
+  const verticalTransform = transform ? { ...transform, x: 0 } : null;
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Transform.toString(verticalTransform),
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 1,
