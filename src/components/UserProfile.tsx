@@ -119,9 +119,8 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
               ))}
             </div>
             <div className="flex items-center justify-between gap-3 border-t border-tertiary/10 pt-3">
-              <div>
+              <div className="flex h-5 items-center">
                 <p className="text-xs font-medium text-primary">每日总结</p>
-                <p className="text-[11px] text-tertiary">按账号同步</p>
               </div>
               <button
                 type="button"
