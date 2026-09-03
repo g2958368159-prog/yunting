@@ -67,7 +67,7 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="relative flex w-full items-center gap-2">
       <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarUpload} />
       <div 
         className="w-9 h-9 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent font-medium text-sm shrink-0 cursor-pointer overflow-hidden relative hover:ring-2 hover:ring-accent/20 transition-all"
@@ -92,7 +92,7 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
           <div className="text-[14px] font-medium text-primary truncate cursor-pointer select-none" title="双击修改昵称">{name}</div>
         )}
       </div>
-      <div className="relative shrink-0">
+      <div className="shrink-0">
         <button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
           title="设置"
@@ -100,8 +100,9 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
         >
           <Settings size={16} />
         </button>
-        {isSettingsOpen && (
-          <div className="absolute bottom-full right-[-0.75rem] mb-2 w-56 rounded-lg border border-tertiary/10 bg-surface p-3 shadow-lg z-20">
+      </div>
+      {isSettingsOpen && (
+          <div className="absolute bottom-full left-1/2 z-20 mb-2 w-56 -translate-x-1/2 rounded-lg border border-tertiary/10 bg-surface p-3 shadow-lg">
             <p className="mb-2 text-xs font-medium text-primary">主题</p>
             <div className="flex gap-2 mb-4">
               {(['green', 'orange'] as ThemeName[]).map((option) => (
@@ -136,7 +137,6 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
             </div>
           </div>
         )}
-      </div>
       <button 
         onClick={onLogout}
         title="退出登录"

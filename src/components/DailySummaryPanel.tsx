@@ -56,7 +56,7 @@ export function DailySummaryPanel({ user, date }: DailySummaryPanelProps) {
   };
 
   return (
-    <aside className="hidden md:flex w-[260px] shrink-0 bg-surface-hover/50 border-l border-tertiary/10 p-5 flex-col">
+    <aside className="hidden md:flex w-[500px] shrink-0 bg-surface-hover/50 border-l border-tertiary/10 p-5 flex-col">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles size={16} className="text-accent" />
         <h2 className="text-sm font-medium text-primary">每日总结</h2>

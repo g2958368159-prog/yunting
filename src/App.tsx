@@ -206,7 +206,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
     <div className="min-h-screen flex items-center justify-center bg-app p-0 md:p-6 lg:p-8">
       
       {/* 桌面端居中主视窗 / 移动端全屏铺满 */}
-      <div className="w-full max-w-[1000px] h-[100dvh] md:h-[85vh] min-h-[600px] bg-surface md:rounded-2xl md:shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col md:flex-row overflow-hidden border border-transparent md:border-tertiary/10">
+      <div className={`w-full ${dailySummaryEnabled ? 'max-w-[1500px]' : 'max-w-[1000px]'} h-[100dvh] md:h-[85vh] min-h-[600px] bg-surface md:rounded-2xl md:shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col md:flex-row overflow-hidden border border-transparent md:border-tertiary/10`}>
         
         {/* 移动端全局 Header */}
         <header className="md:hidden shrink-0 bg-surface border-b border-tertiary/10 px-5 py-4 flex items-center justify-between z-10">
