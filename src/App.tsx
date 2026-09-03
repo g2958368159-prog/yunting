@@ -13,13 +13,14 @@ import { supabase } from './lib/supabase';
 import { Auth } from './components/Auth';
 import { UserProfile } from './components/UserProfile';
 import { MobileUserMenu } from './components/MobileUserMenu';
+import { DailySummaryPanel } from './components/DailySummaryPanel';
 import { useTheme } from './hooks/useTheme';
 import type { Session, User } from '@supabase/supabase-js';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
-  const { toggleTheme } = useTheme(session?.user);
+  const { theme, setTheme } = useTheme(session?.user);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -47,10 +48,10 @@ export default function App() {
     return <Auth onLogin={() => {}} />;
   }
 
-  return <TodoAppContent onLogout={() => supabase.auth.signOut()} onToggleTheme={toggleTheme} user={session.user} />;
+  return <TodoAppContent onLogout={() => supabase.auth.signOut()} theme={theme} onSetTheme={setTheme} user={session.user} />;
 }
 
-function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => void; onToggleTheme: () => Promise<void>; user: User }) {
+function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () => void; theme: 'green' | 'orange'; onSetTheme: (theme: 'green' | 'orange') => Promise<void>; user: User }) {
   const {
     tasks,
     targetDate,
@@ -74,6 +75,7 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
   const [isAdding, setIsAdding] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [addError, setAddError] = useState('');
+  const [dailySummaryEnabled, setDailySummaryEnabled] = useState(Boolean(user.user_metadata?.daily_summary_enabled));
 
   const currentMonthKey = format(new Date(), 'yyyy-MM');
   const [hidePrevMonthAlert, setHidePrevMonthAlert] = useState(() => {
@@ -138,6 +140,16 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
     }
   };
 
+  const handleSetDailySummaryEnabled = async (enabled: boolean) => {
+    const previousValue = dailySummaryEnabled;
+    setDailySummaryEnabled(enabled);
+    const { error } = await supabase.auth.updateUser({ data: { daily_summary_enabled: enabled } });
+    if (error) {
+      setDailySummaryEnabled(previousValue);
+      throw error;
+    }
+  };
+
   const sidebarContentNode = (
     <div className="flex flex-col h-full">
       <div className="flex-1 mt-2">
@@ -178,7 +190,14 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
       </div>
 
       <div className="hidden md:block mt-auto pt-6 border-t border-tertiary/10">
-        <UserProfile user={user} onLogout={onLogout} onToggleTheme={onToggleTheme} />
+        <UserProfile
+          user={user}
+          onLogout={onLogout}
+          theme={theme}
+          onSetTheme={onSetTheme}
+          dailySummaryEnabled={dailySummaryEnabled}
+          onSetDailySummaryEnabled={handleSetDailySummaryEnabled}
+        />
       </div>
     </div>
   );
@@ -202,7 +221,14 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
             </h1>
             <ChevronDown size={16} className="text-tertiary ml-1" />
           </div>
-          <MobileUserMenu user={user} onLogout={onLogout} onToggleTheme={onToggleTheme} />
+          <MobileUserMenu
+            user={user}
+            onLogout={onLogout}
+            theme={theme}
+            onSetTheme={onSetTheme}
+            dailySummaryEnabled={dailySummaryEnabled}
+            onSetDailySummaryEnabled={handleSetDailySummaryEnabled}
+          />
         </header>
 
         {/* 移动端底部抽屉 */}
@@ -414,6 +440,7 @@ function TodoAppContent({ onLogout, onToggleTheme, user }: { onLogout: () => voi
             </div>
           </div>
         </main>
+        {dailySummaryEnabled && <DailySummaryPanel key={targetDate} user={user} date={targetDate} />}
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TaskItem } from './TaskItem';
-import { GripVertical } from 'lucide-react';
 import type { Task } from '../types';
 
 interface SortableTaskItemProps {
@@ -31,14 +30,13 @@ export function SortableTaskItem(props: SortableTaskItemProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="group/sortable relative flex items-center">
-      <div 
-        {...attributes}
-        {...listeners}
-        className="absolute left-[-20px] z-10 p-1 text-tertiary/30 hover:text-tertiary cursor-grab active:cursor-grabbing opacity-0 md:opacity-0 group-hover/sortable:opacity-100 transition-opacity"
-      >
-        <GripVertical size={16} />
-      </div>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="relative flex items-center cursor-grab active:cursor-grabbing"
+    >
       <div className="flex-1 min-w-0">
         <TaskItem {...props} />
       </div>

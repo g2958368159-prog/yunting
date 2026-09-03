@@ -1,8 +1,18 @@
 import { useState, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import type { ThemeName } from '../hooks/useTheme';
 
-export function MobileUserMenu({ user, onLogout, onToggleTheme }: { user: User; onLogout: () => void; onToggleTheme: () => Promise<void> }) {
+interface MobileUserMenuProps {
+  user: User;
+  onLogout: () => void;
+  theme: ThemeName;
+  onSetTheme: (theme: ThemeName) => Promise<void>;
+  dailySummaryEnabled: boolean;
+  onSetDailySummaryEnabled: (enabled: boolean) => Promise<void>;
+}
+
+export function MobileUserMenu({ user, onLogout, theme, onSetTheme, dailySummaryEnabled, onSetDailySummaryEnabled }: MobileUserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [avatar, setAvatar] = useState(user.user_metadata?.avatar_url || '');
   const name = user.user_metadata?.full_name || '探索者';
@@ -48,21 +58,41 @@ export function MobileUserMenu({ user, onLogout, onToggleTheme }: { user: User; 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-tertiary/10 py-1 z-50 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-tertiary/10 p-3 z-50 overflow-hidden">
             <button 
-              className="w-full text-left px-4 py-2.5 text-[14px] text-primary hover:bg-surface-hover transition-colors"
+              className="w-full text-left py-2 text-[14px] text-primary hover:bg-surface-hover transition-colors"
               onClick={() => { setIsOpen(false); fileInputRef.current?.click(); }}
             >
               更换头像
             </button>
+            <div className="border-t border-tertiary/10 mt-2 pt-3">
+              <p className="mb-2 text-xs font-medium text-primary">设置</p>
+              <div className="flex gap-2 mb-3">
+                {(['green', 'orange'] as ThemeName[]).map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => void onSetTheme(option)}
+                    className={`flex-1 rounded-md border px-2 py-1.5 text-xs ${theme === option ? 'border-accent bg-accent/10 text-primary' : 'border-tertiary/15 text-tertiary'}`}
+                  >
+                    {option === 'green' ? '绿色' : '白橙色'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between text-xs text-primary">
+                <span>每日总结</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={dailySummaryEnabled}
+                  onClick={() => void onSetDailySummaryEnabled(!dailySummaryEnabled)}
+                  className={`h-5 w-9 rounded-full p-0.5 transition-colors ${dailySummaryEnabled ? 'bg-accent' : 'bg-tertiary/30'}`}
+                >
+                  <span className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${dailySummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            </div>
             <button 
-              className="w-full text-left px-4 py-2.5 text-[14px] text-primary hover:bg-surface-hover transition-colors"
-              onClick={() => { setIsOpen(false); void onToggleTheme(); }}
-            >
-              切换主题
-            </button>
-            <button 
-              className="w-full text-left px-4 py-2.5 text-[14px] text-danger hover:bg-danger/5 transition-colors"
+              className="w-full text-left py-2 mt-2 text-[14px] text-danger hover:bg-danger/5 transition-colors"
               onClick={() => { setIsOpen(false); onLogout(); }}
             >
               退出登录

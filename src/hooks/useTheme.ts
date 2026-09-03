@@ -26,8 +26,8 @@ export function useTheme(user?: User) {
     localStorage.setItem('app-theme', theme);
   }, [theme]);
 
-  const toggleTheme = async () => {
-    const nextTheme = theme === 'green' ? 'orange' : 'green';
+  const setTheme = async (nextTheme: ThemeName) => {
+    if (nextTheme === theme) return;
     setLocalTheme(nextTheme);
 
     if (!user) return;
@@ -41,5 +41,7 @@ export function useTheme(user?: User) {
     }
   };
 
-  return { theme, toggleTheme };
+  const toggleTheme = () => setTheme(theme === 'green' ? 'orange' : 'green');
+
+  return { theme, setTheme, toggleTheme };
 }

@@ -1,12 +1,24 @@
 import { useState, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { LogOut, Palette } from 'lucide-react';
+import { Check, LogOut, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import type { ThemeName } from '../hooks/useTheme';
 
-export function UserProfile({ user, onLogout, onToggleTheme }: { user: User; onLogout: () => void; onToggleTheme: () => Promise<void> }) {
+interface UserProfileProps {
+  user: User;
+  onLogout: () => void;
+  theme: ThemeName;
+  onSetTheme: (theme: ThemeName) => Promise<void>;
+  dailySummaryEnabled: boolean;
+  onSetDailySummaryEnabled: (enabled: boolean) => Promise<void>;
+}
+
+export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEnabled, onSetDailySummaryEnabled }: UserProfileProps) {
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [name, setName] = useState(user.user_metadata?.full_name || '探索者');
   const [avatar, setAvatar] = useState(user.user_metadata?.avatar_url || '');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleNameSave = async (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>) => {
@@ -43,6 +55,17 @@ export function UserProfile({ user, onLogout, onToggleTheme }: { user: User; onL
     reader.readAsDataURL(file);
   };
 
+  const saveSetting = async (action: () => Promise<void>) => {
+    setIsSavingSettings(true);
+    try {
+      await action();
+    } catch (error) {
+      console.error('Failed to save setting:', error);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   return (
     <div className="flex items-center gap-2">
       <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarUpload} />
@@ -69,13 +92,50 @@ export function UserProfile({ user, onLogout, onToggleTheme }: { user: User; onL
           <div className="text-[14px] font-medium text-primary truncate cursor-pointer select-none" title="双击修改昵称">{name}</div>
         )}
       </div>
-      <button 
-        onClick={onToggleTheme}
-        title="切换主题颜色"
-        className="text-tertiary hover:text-accent transition-colors p-1.5 rounded-[4px] hover:bg-accent/5 shrink-0"
-      >
-        <Palette size={16} />
-      </button>
+      <div className="relative shrink-0">
+        <button
+          onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+          title="设置"
+          className="text-tertiary hover:text-accent transition-colors p-1.5 rounded-[4px] hover:bg-accent/5"
+        >
+          <Settings size={16} />
+        </button>
+        {isSettingsOpen && (
+          <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-tertiary/10 bg-surface p-3 shadow-lg z-20">
+            <p className="mb-2 text-xs font-medium text-primary">主题</p>
+            <div className="flex gap-2 mb-4">
+              {(['green', 'orange'] as ThemeName[]).map((option) => (
+                <button
+                  key={option}
+                  disabled={isSavingSettings}
+                  onClick={() => void saveSetting(() => onSetTheme(option))}
+                  className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${theme === option ? 'border-accent bg-accent/10 text-primary' : 'border-tertiary/15 text-tertiary hover:border-accent/50'}`}
+                >
+                  <span className={`mr-1 inline-block h-2 w-2 rounded-full ${option === 'green' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                  {option === 'green' ? '绿色' : '白橙色'}
+                  {theme === option && <Check size={12} className="inline ml-1" />}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-tertiary/10 pt-3">
+              <div>
+                <p className="text-xs font-medium text-primary">每日总结</p>
+                <p className="text-[11px] text-tertiary">按账号同步</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={dailySummaryEnabled}
+                disabled={isSavingSettings}
+                onClick={() => void saveSetting(() => onSetDailySummaryEnabled(!dailySummaryEnabled))}
+                className={`h-5 w-9 rounded-full p-0.5 transition-colors ${dailySummaryEnabled ? 'bg-accent' : 'bg-tertiary/30'}`}
+              >
+                <span className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${dailySummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       <button 
         onClick={onLogout}
         title="退出登录"
