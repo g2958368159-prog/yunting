@@ -8,7 +8,7 @@ interface SortableTaskItemProps {
   isCompleted: boolean;
   onToggle: () => void;
   onDelete: () => void;
-  onUpdate: (content: string, creationDate?: string) => void;
+  onUpdate: (content: string, creationDate?: string, autoRollover?: boolean) => void;
 }
 
 export function SortableTaskItem(props: SortableTaskItemProps) {

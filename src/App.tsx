@@ -397,7 +397,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
                           isCompleted={false}
                           onToggle={() => toggleTask(task.id)}
                           onDelete={() => deleteTask(task.id)}
-                          onUpdate={(content, creationDate) => updateTask(task.id, content, creationDate)}
+                          onUpdate={(content, creationDate, autoRollover) => updateTask(task.id, content, creationDate, autoRollover)}
                         />
                       ))}
                     </SortableContext>
@@ -432,7 +432,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
                       isCompleted={true}
                       onToggle={() => toggleTask(task.id)}
                       onDelete={() => deleteTask(task.id)}
-                      onUpdate={(content, creationDate) => updateTask(task.id, content, creationDate)}
+                      onUpdate={(content, creationDate, autoRollover) => updateTask(task.id, content, creationDate, autoRollover)}
                     />
                   ))}
                 </div>
