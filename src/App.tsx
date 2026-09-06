@@ -304,6 +304,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
                         setAddError('');
                       }}
                       onKeyDown={(e) => {
+                        e.stopPropagation();
                         if (e.key === 'Enter') {
                           handleAddSubmit();
                         }

@@ -72,6 +72,7 @@ export function TaskItem({ task, isCompleted, onToggle, onDelete, onUpdate }: Ta
               maxLength={200}
               onChange={(e) => setEditContent(e.target.value)}
               onKeyDown={(e) => {
+                e.stopPropagation();
                 if (e.key === 'Enter') handleSave();
                 if (e.key === 'Escape') {
                   setIsEditing(false);
