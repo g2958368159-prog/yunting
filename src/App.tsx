@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useTodoApp } from './hooks/useTodoApp';
 import { TaskItem } from './components/TaskItem';
 import { CalendarWidget } from './components/CalendarWidget';
@@ -81,6 +81,47 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
   const [hidePrevMonthAlert, setHidePrevMonthAlert] = useState(() => {
     return localStorage.getItem(`dismiss_alert_${currentMonthKey}`) === 'true';
   });
+  const taskPanelHeightStorageKey = `unfinished_task_panel_height_${user.id}`;
+  const [unfinishedTaskPanelHeight, setUnfinishedTaskPanelHeight] = useState(() => {
+    const savedHeight = Number(localStorage.getItem(taskPanelHeightStorageKey));
+    return savedHeight >= 25 && savedHeight <= 75 ? savedHeight : 50;
+  });
+  const taskPanelsRef = useRef<HTMLDivElement>(null);
+  const isResizingTaskPanelsRef = useRef(false);
+  const [isResizingTaskPanels, setIsResizingTaskPanels] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(taskPanelHeightStorageKey, String(unfinishedTaskPanelHeight));
+  }, [taskPanelHeightStorageKey, unfinishedTaskPanelHeight]);
+
+  const updateUnfinishedTaskPanelHeight = (clientY: number) => {
+    const taskPanelsBounds = taskPanelsRef.current?.getBoundingClientRect();
+    if (!taskPanelsBounds) return;
+
+    const nextHeight = ((clientY - taskPanelsBounds.top) / taskPanelsBounds.height) * 100;
+    setUnfinishedTaskPanelHeight(Math.min(75, Math.max(25, nextHeight)));
+  };
+
+  const handleTaskPanelResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    isResizingTaskPanelsRef.current = true;
+    setIsResizingTaskPanels(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    updateUnfinishedTaskPanelHeight(event.clientY);
+  };
+
+  const handleTaskPanelResizeMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (isResizingTaskPanelsRef.current) updateUnfinishedTaskPanelHeight(event.clientY);
+  };
+
+  const handleTaskPanelResizeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isResizingTaskPanelsRef.current) return;
+    isResizingTaskPanelsRef.current = false;
+    setIsResizingTaskPanels(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -280,8 +321,13 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
             </button>
           </div>
           
-          {/* 上半区: 未完成 (占 50% 高度, 内部滚动) */}
-          <div className="flex-1 flex flex-col min-h-0 border-b border-tertiary/10">
+          <div
+            ref={taskPanelsRef}
+            className="flex-1 flex flex-col min-h-0"
+            style={{ '--unfinished-task-panel-height': `${unfinishedTaskPanelHeight}%` } as CSSProperties}
+          >
+          {/* 上半区: 未完成 */}
+          <div className="flex-1 md:flex-none md:basis-[var(--unfinished-task-panel-height)] flex flex-col min-h-0 border-b border-tertiary/10">
             {/* 未完成标题行 */}
             <div className="shrink-0 flex items-center gap-2 px-6 h-12 bg-orange-500/10 border-b border-orange-500/10">
               <div className="w-1 h-3.5 bg-orange-500 rounded-[4px]" />
@@ -408,7 +454,20 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
             </div>
           </div>
 
-          {/* 下半区: 已完成 (占 50% 高度, 内部滚动) */}
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="调整未完成与已完成任务区域高度"
+            onPointerDown={handleTaskPanelResizeStart}
+            onPointerMove={handleTaskPanelResizeMove}
+            onPointerUp={handleTaskPanelResizeEnd}
+            onPointerCancel={handleTaskPanelResizeEnd}
+            className={`hidden md:flex h-3 shrink-0 cursor-row-resize touch-none items-center justify-center bg-surface-hover/40 hover:bg-accent/10 transition-colors ${isResizingTaskPanels ? 'bg-accent/15' : ''}`}
+          >
+            <span className="h-1 w-10 rounded-full bg-tertiary/30" />
+          </div>
+
+          {/* 下半区: 已完成 */}
           <div className="flex-1 flex flex-col min-h-0 bg-surface/50">
             {/* 带有底色的标题行 */}
             <div className="shrink-0 flex items-center gap-2 px-6 h-12 bg-emerald-500/10 border-t border-emerald-500/10">
@@ -439,6 +498,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
                 </div>
               )}
             </div>
+          </div>
           </div>
         </main>
         {dailySummaryEnabled && <DailySummaryPanel key={targetDate} user={user} date={targetDate} />}
