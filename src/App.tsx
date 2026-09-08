@@ -462,7 +462,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
             onPointerMove={handleTaskPanelResizeMove}
             onPointerUp={handleTaskPanelResizeEnd}
             onPointerCancel={handleTaskPanelResizeEnd}
-            className={`hidden md:flex h-3 shrink-0 cursor-row-resize touch-none items-center justify-center bg-surface-hover/40 hover:bg-accent/10 transition-colors ${isResizingTaskPanels ? 'bg-accent/15' : ''}`}
+            className={`hidden md:flex h-3 shrink-0 cursor-row-resize touch-none items-center justify-center bg-emerald-500/10 hover:bg-accent/10 transition-colors ${isResizingTaskPanels ? 'bg-accent/15' : ''}`}
           >
             <span className="h-1 w-10 rounded-full bg-tertiary/30" />
           </div>
@@ -470,7 +470,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
           {/* 下半区: 已完成 */}
           <div className="flex-1 flex flex-col min-h-0 bg-surface/50">
             {/* 带有底色的标题行 */}
-            <div className="shrink-0 flex items-center gap-2 px-6 h-12 bg-emerald-500/10 border-t border-emerald-500/10">
+            <div className="shrink-0 flex items-center gap-2 px-6 h-12 bg-emerald-500/10">
               <div className="w-1 h-3.5 bg-emerald-500 rounded-[4px]" />
               <h2 className="text-[14px] font-normal text-primary tracking-wide">已完成</h2>
               <span className="text-[11px] bg-white/60 text-emerald-600 font-medium px-1.5 py-0.5 rounded-[4px]">{finishedTasks.length}</span>
