@@ -470,10 +470,12 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
           {/* 下半区: 已完成 */}
           <div className="flex-1 flex flex-col min-h-0 bg-surface/50">
             {/* 带有底色的标题行 */}
-            <div className="shrink-0 flex items-center gap-2 px-6 h-9 bg-emerald-500/10">
-              <div className="w-1 h-3.5 bg-emerald-500 rounded-[4px]" />
-              <h2 className="text-[14px] font-normal text-primary tracking-wide">已完成</h2>
-              <span className="text-[11px] bg-white/60 text-emerald-600 font-medium px-1.5 py-0.5 rounded-[4px]">{finishedTasks.length}</span>
+            <div className="shrink-0 flex h-9 items-center px-6 bg-emerald-500/10">
+              <div className="flex items-center gap-2 md:-translate-y-1.5">
+                <div className="w-1 h-3.5 bg-emerald-500 rounded-[4px]" />
+                <h2 className="text-[14px] font-normal text-primary tracking-wide">已完成</h2>
+                <span className="text-[11px] bg-white/60 text-emerald-600 font-medium px-1.5 py-0.5 rounded-[4px]">{finishedTasks.length}</span>
+              </div>
             </div>
             
             {/* 列表滚动区 */}
