@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { ThemeName } from '../hooks/useTheme';
+import { AiModelSettings } from './AiModelSettings';
 
 interface MobileUserMenuProps {
   user: User;
@@ -15,6 +16,7 @@ interface MobileUserMenuProps {
 export function MobileUserMenu({ user, onLogout, theme, onSetTheme, dailySummaryEnabled, onSetDailySummaryEnabled }: MobileUserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [avatar, setAvatar] = useState(user.user_metadata?.avatar_url || '');
+  const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
   const name = user.user_metadata?.full_name || '探索者';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +93,9 @@ export function MobileUserMenu({ user, onLogout, theme, onSetTheme, dailySummary
                   <span className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${dailySummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                 </button>
               </div>
+              <button type="button" onClick={() => { setIsOpen(false); setIsAiSettingsOpen(true); }} className="mt-3 flex w-full items-center justify-between rounded-md border border-tertiary/10 px-2.5 py-2 text-xs font-medium text-primary">
+                <span>AI 模型接入</span><span className="text-tertiary">›</span>
+              </button>
             </div>
             <button 
               className="w-full text-left py-2 mt-2 text-[14px] text-danger hover:bg-danger/5 transition-colors"
@@ -101,6 +106,7 @@ export function MobileUserMenu({ user, onLogout, theme, onSetTheme, dailySummary
           </div>
         </>
       )}
+      {isAiSettingsOpen && <AiModelSettings onClose={() => setIsAiSettingsOpen(false)} />}
     </div>
   );
 }

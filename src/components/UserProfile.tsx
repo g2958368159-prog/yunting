@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { Check, LogOut, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { ThemeName } from '../hooks/useTheme';
+import { AiModelSettings } from './AiModelSettings';
 
 interface UserProfileProps {
   user: User;
@@ -19,6 +20,7 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
   const [name, setName] = useState(user.user_metadata?.full_name || '探索者');
   const [avatar, setAvatar] = useState(user.user_metadata?.avatar_url || '');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleNameSave = async (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>) => {
@@ -134,8 +136,12 @@ export function UserProfile({ user, onLogout, theme, onSetTheme, dailySummaryEna
                 <span className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${dailySummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
               </button>
             </div>
+            <button type="button" onClick={() => { setIsSettingsOpen(false); setIsAiSettingsOpen(true); }} className="mt-3 flex w-full items-center justify-between rounded-md border border-tertiary/10 px-2.5 py-2 text-xs font-medium text-primary transition-colors hover:border-accent/40 hover:bg-accent/5">
+              <span>AI 模型接入</span><span className="text-tertiary">›</span>
+            </button>
           </div>
         )}
+      {isAiSettingsOpen && <AiModelSettings onClose={() => setIsAiSettingsOpen(false)} />}
       <button 
         onClick={onLogout}
         title="退出登录"

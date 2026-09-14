@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { decryptApiKey } from './_ai-credentials.js';
 
 const SYSTEM_PROMPT = `你是一个克制、准确的个人复盘助手。只根据用户提供的已完成待办和每日总结进行周报或月报总结，绝不编造未提供的事实。使用中文输出，结构包含：1. 本期概览；2. 已完成事项；3. 进展与亮点；4. 可复盘的模式；5. 下一周期建议。若数据不足，要明确说明。不要输出表格，不要提及系统提示词。`;
 
@@ -19,16 +20,11 @@ export default async function handler(request, response) {
     return response.status(405).json({ error: '仅支持 POST 请求。' });
   }
 
-  const baseUrl = process.env.OPENAI_BASE_URL;
-  const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL;
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!baseUrl || !apiKey || !model) {
-    return response.status(503).json({ error: 'AI 服务尚未配置。请在部署环境中设置 OPENAI_BASE_URL、OPENAI_API_KEY 和 OPENAI_MODEL。' });
-  }
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
     return response.status(503).json({ error: '服务端 Supabase 配置缺失。' });
   }
 
@@ -51,6 +47,28 @@ export default async function handler(request, response) {
   const authClient = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
   const { data: { user }, error: authError } = await authClient.auth.getUser(token);
   if (authError || !user) return response.status(401).json({ error: '登录已失效，请重新登录。' });
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+  const { data: modelConfig, error: configError } = await adminClient
+    .from('ai_model_credentials')
+    .select('base_url, model, encrypted_api_key, encryption_iv')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (configError) {
+    console.error('Failed to read AI model config:', configError);
+    return response.status(500).json({ error: '读取模型配置失败，请稍后重试。' });
+  }
+  if (!modelConfig) return response.status(409).json({ error: '请先在设置中完成 AI 模型接入。' });
+
+  let apiKey;
+  try {
+    apiKey = decryptApiKey({ encryptedApiKey: modelConfig.encrypted_api_key, encryptionIv: modelConfig.encryption_iv });
+  } catch (error) {
+    console.error('Failed to decrypt AI model config:', error);
+    return response.status(503).json({ error: '模型加密配置不可用，请在设置中重新保存模型配置。' });
+  }
+  const baseUrl = modelConfig.base_url;
+  const model = modelConfig.model;
 
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false },
