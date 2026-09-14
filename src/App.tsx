@@ -75,6 +75,8 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
   const [isAdding, setIsAdding] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [addError, setAddError] = useState('');
+  const [isSubmittingNewTask, setIsSubmittingNewTask] = useState(false);
+  const isSubmittingNewTaskRef = useRef(false);
   const [dailySummaryEnabled, setDailySummaryEnabled] = useState(Boolean(user.user_metadata?.daily_summary_enabled));
 
   const currentMonthKey = format(new Date(), 'yyyy-MM');
@@ -147,14 +149,14 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
   const weekDay = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][targetDateObj.getDay()];
 
   const handleAddSubmit = async () => {
+    if (isSubmittingNewTaskRef.current) return;
+
     if (newContent.trim()) {
       const finalStart = newStartDate || targetDate;
       const finalEnd = newEndDate || finalStart;
-      
-      // Update useTodoApp's addTask to handle just the final creationDate string
-      // But wait, the current addTask signature is `addTask(content: string, endDate?: string)`.
-      // I should update it to accept the raw creation_date string.
-      // Let's change how we call it. For now, let's just pass `finalStart` and `finalEnd`.
+      isSubmittingNewTaskRef.current = true;
+      setIsSubmittingNewTask(true);
+
       try {
         await addTask(newContent.trim(), finalStart, finalEnd, newAutoRollover);
         setNewContent('');
@@ -166,6 +168,9 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
         setAddError('');
       } catch {
         setAddError('保存失败，请检查网络后重试。');
+      } finally {
+        isSubmittingNewTaskRef.current = false;
+        setIsSubmittingNewTask(false);
       }
     } else {
       setIsAdding(false);
@@ -389,15 +394,17 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={() => { setIsAdding(false); setShowDatePicker(false); setAddError(''); }}
+                            disabled={isSubmittingNewTask}
                             className="text-xs text-tertiary hover:text-primary transition-colors"
                           >
                             取消
                           </button>
                           <button 
                             onClick={handleAddSubmit}
-                            className="text-xs bg-accent text-white px-3 py-1 rounded-[4px] hover:bg-accent/90 transition-colors shadow-sm"
+                            disabled={isSubmittingNewTask}
+                            className="text-xs bg-accent text-white px-3 py-1 rounded-[4px] hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60 transition-colors shadow-sm"
                           >
-                            保存
+                            {isSubmittingNewTask ? '保存中…' : '保存'}
                           </button>
                         </div>
                       </div>
