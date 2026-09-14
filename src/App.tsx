@@ -7,13 +7,14 @@ import { SortableTaskItem } from './components/SortableTaskItem';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Calendar as CalendarIcon, ChevronDown, X, Plus, Archive, Coffee, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, X, Plus, Archive, Coffee, AlertCircle, Sparkles } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from './lib/supabase';
 import { Auth } from './components/Auth';
 import { UserProfile } from './components/UserProfile';
 import { MobileUserMenu } from './components/MobileUserMenu';
 import { DailySummaryPanel } from './components/DailySummaryPanel';
+import { AiSummaryPage } from './components/AiSummaryPage';
 import { useTheme } from './hooks/useTheme';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -78,6 +79,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
   const [isSubmittingNewTask, setIsSubmittingNewTask] = useState(false);
   const isSubmittingNewTaskRef = useRef(false);
   const [dailySummaryEnabled, setDailySummaryEnabled] = useState(Boolean(user.user_metadata?.daily_summary_enabled));
+  const [isAiSummaryOpen, setIsAiSummaryOpen] = useState(false);
 
   const currentMonthKey = format(new Date(), 'yyyy-MM');
   const [hidePrevMonthAlert, setHidePrevMonthAlert] = useState(() => {
@@ -311,21 +313,34 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
             <h2 className="text-lg font-semibold text-primary tracking-tight">
               {targetDate} <span className="font-bold ml-1">{weekDay}</span>
             </h2>
-            <button 
-              translate="no"
-              onClick={() => { 
-                setIsAdding(true); 
-                setNewStartDate(targetDate); 
-                setNewEndDate(targetDate); 
-                setNewAutoRollover(true);
-                setAddError('');
-              }}
-              className="bg-accent text-white p-1.5 rounded-[6px] hover:opacity-90 transition-opacity shadow-sm flex items-center justify-center"
-            >
-              <Plus size={18} strokeWidth={2.5} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAiSummaryOpen(true)}
+                title="智能总结"
+                className="p-1.5 text-tertiary hover:text-accent hover:bg-accent/5 rounded-[6px] transition-colors"
+              >
+                <Sparkles size={18} />
+              </button>
+              <button
+                translate="no"
+                onClick={() => {
+                  setIsAdding(true);
+                  setNewStartDate(targetDate);
+                  setNewEndDate(targetDate);
+                  setNewAutoRollover(true);
+                  setAddError('');
+                }}
+                className="bg-accent text-white p-1.5 rounded-[6px] hover:opacity-90 transition-opacity shadow-sm flex items-center justify-center"
+              >
+                <Plus size={18} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
-          
+
+          {isAiSummaryOpen ? (
+            <AiSummaryPage onClose={() => setIsAiSummaryOpen(false)} />
+          ) : (
           <div
             ref={taskPanelsRef}
             className="flex-1 flex flex-col min-h-0"
@@ -509,6 +524,7 @@ function TodoAppContent({ onLogout, theme, onSetTheme, user }: { onLogout: () =>
             </div>
           </div>
           </div>
+          )}
         </main>
         {dailySummaryEnabled && <DailySummaryPanel key={targetDate} user={user} date={targetDate} />}
       </div>
