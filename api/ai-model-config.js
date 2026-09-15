@@ -28,6 +28,11 @@ export default async function handler(request, response) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const platformConfigured = Boolean(
+    process.env.AI_MODEL_API_KEY?.trim()
+    && process.env.AI_MODEL_BASE_URL?.trim()
+    && process.env.AI_MODEL_NAME?.trim(),
+  );
   if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) return response.status(503).json({ error: '服务端模型配置尚未完成。' });
 
   const token = request.headers.authorization?.startsWith('Bearer ') ? request.headers.authorization.slice(7) : '';
@@ -40,7 +45,7 @@ export default async function handler(request, response) {
   if (request.method === 'GET') {
     const { data, error } = await adminClient.from('ai_model_credentials').select('base_url, model, updated_at').eq('user_id', user.id).maybeSingle();
     if (error) { console.error('Failed to load AI model config:', error); return response.status(500).json({ error: '读取模型配置失败。' }); }
-    return response.status(200).json({ configured: Boolean(data), baseUrl: data?.base_url || '', model: data?.model || '', updatedAt: data?.updated_at || null });
+    return response.status(200).json({ configured: Boolean(data), platformConfigured, baseUrl: data?.base_url || '', model: data?.model || '', updatedAt: data?.updated_at || null });
   }
 
   let body;
@@ -53,6 +58,6 @@ export default async function handler(request, response) {
     const model = body.model.trim();
     const { error } = await adminClient.from('ai_model_credentials').upsert({ user_id: user.id, base_url: baseUrl, model, encrypted_api_key: encryptedApiKey, encryption_iv: encryptionIv, updated_at: new Date().toISOString() });
     if (error) { console.error('Failed to save AI model config:', error); return response.status(500).json({ error: '保存模型配置失败。' }); }
-    return response.status(200).json({ configured: true, baseUrl, model });
+    return response.status(200).json({ configured: true, platformConfigured, baseUrl, model });
   } catch (error) { console.error('Failed to encrypt AI model config:', error); return response.status(503).json({ error: '服务端加密配置尚未完成。' }); }
 }

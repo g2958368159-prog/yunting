@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { decryptApiKey } from './_ai-credentials.js';
+import { isInsufficientModelBalance } from './_ai-errors.js';
 
 const SYSTEM_PROMPT = `你是一个克制、准确的个人复盘助手。只根据用户提供的已完成待办和每日总结进行周报或月报总结，绝不编造未提供的事实。使用中文输出，结构包含：1. 本期概览；2. 已完成事项；3. 进展与亮点；4. 可复盘的模式；5. 下一周期建议。若数据不足，要明确说明。不要输出表格，不要提及系统提示词。`;
 
@@ -58,17 +59,24 @@ export default async function handler(request, response) {
     console.error('Failed to read AI model config:', configError);
     return response.status(500).json({ error: '读取模型配置失败，请稍后重试。' });
   }
-  if (!modelConfig) return response.status(409).json({ error: '请先在设置中完成 AI 模型接入。' });
+  let apiKey = process.env.AI_MODEL_API_KEY?.trim();
+  let baseUrl = process.env.AI_MODEL_BASE_URL?.trim();
+  let model = process.env.AI_MODEL_NAME?.trim();
 
-  let apiKey;
-  try {
-    apiKey = decryptApiKey({ encryptedApiKey: modelConfig.encrypted_api_key, encryptionIv: modelConfig.encryption_iv });
-  } catch (error) {
-    console.error('Failed to decrypt AI model config:', error);
-    return response.status(503).json({ error: '模型加密配置不可用，请在设置中重新保存模型配置。' });
+  if (modelConfig) {
+    try {
+      apiKey = decryptApiKey({ encryptedApiKey: modelConfig.encrypted_api_key, encryptionIv: modelConfig.encryption_iv });
+      baseUrl = modelConfig.base_url;
+      model = modelConfig.model;
+    } catch (error) {
+      console.error('Failed to decrypt personal AI model config:', error);
+      return response.status(503).json({ error: '个人模型加密配置不可用，请在设置中重新保存。' });
+    }
   }
-  const baseUrl = modelConfig.base_url;
-  const model = modelConfig.model;
+
+  if (!apiKey || !baseUrl || !model) {
+    return response.status(503).json({ error: '平台模型尚未配置，请联系管理员。' });
+  }
 
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false },
@@ -131,6 +139,9 @@ export default async function handler(request, response) {
     const modelPayload = await modelResponse.json().catch(() => ({}));
     if (!modelResponse.ok) {
       console.error('OpenAI-compatible API failed:', modelResponse.status, modelPayload);
+      if (isInsufficientModelBalance(modelResponse.status, modelPayload)) {
+        return response.status(402).json({ error: '模型余额不足，无法生成总结。' });
+      }
       return response.status(502).json({ error: '模型服务暂时不可用，请检查模型配置后重试。' });
     }
 
