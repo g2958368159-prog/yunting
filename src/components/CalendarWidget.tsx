@@ -98,12 +98,14 @@ export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday 
             >
               <span className={!isCurrentMonth && !isSelected ? "opacity-40" : ""}>{isToday && isCurrentMonth ? '今' : format(day, 'd')}</span>
               {(hasUnfinished || hasFinished) && (
-                <span className={cn(
-                  "absolute bottom-1 w-1 h-1 rounded-full",
-                  hasUnfinished ? "bg-orange-400" : "bg-tertiary/40",
-                  isSelected && hasUnfinished ? "bg-white/80" : "",
-                  isSelected && !hasUnfinished && hasFinished ? "bg-white/50" : ""
-                )} />
+                <span className="pointer-events-none absolute bottom-1 flex items-center gap-0.5">
+                  {hasUnfinished && (
+                    <span className={cn("h-1 w-1 rounded-full bg-orange-400", isSelected && "bg-white/80")} />
+                  )}
+                  {hasFinished && (
+                    <span className={cn("h-1 w-1 rounded-full bg-tertiary/40", isSelected && "bg-white/50")} />
+                  )}
+                </span>
               )}
             </button>
           );
