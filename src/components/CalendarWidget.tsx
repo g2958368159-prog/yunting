@@ -102,8 +102,8 @@ export function CalendarWidget({ tasks, targetDate, onChangeDate, physicalToday 
                   {hasUnfinished && (
                     <span className={cn("h-1 w-1 rounded-full bg-orange-400", isSelected && "bg-white/80")} />
                   )}
-                  {hasFinished && (
-                    <span className={cn("h-1.5 w-1.5 rounded-full bg-slate-400", isSelected && "bg-white/60")} />
+                  {hasFinished && !hasUnfinished && (
+                    <span className={cn("h-1 w-1 rounded-full bg-slate-300", isSelected && "bg-white/50")} />
                   )}
                 </span>
               )}
